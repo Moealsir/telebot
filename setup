@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Define variables
+CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chrome-linux64.zip"
+CHROME_DIR="/opt/google/chrome"
+CHROME_ZIP="chrome-linux64.zip"
+CHROMEDRIVER_URL="https://chromedriver.storage.googleapis.com/127.0.6533.96/chromedriver_linux64.zip"
+CHROMEDRIVER_ZIP="chromedriver_linux64.zip"
+CHROMEDRIVER_DIR="/usr/local/bin"
+
+# Update package list
+sudo apt-get update
+
+# Install required dependencies
+sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1 unzip wget python3 python3-pip
+
+# Download Chrome ZIP file
+wget $CHROME_URL -O $CHROME_ZIP
+
+# Create the installation directory
+sudo mkdir -p $CHROME_DIR
+
+# Unzip the downloaded file
+unzip $CHROME_ZIP -d $CHROME_DIR
+
+# Move the unzipped directory to /opt/google/chrome
+sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome
+
+# Create a symlink to the Chrome executable
+sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
+
+# Download ChromeDriver ZIP file
+wget $CHROMEDRIVER_URL -O $CHROMEDRIVER_ZIP
+
+# Unzip the downloaded ChromeDriver file
+unzip $CHROMEDRIVER_ZIP
+
+# Move ChromeDriver to /usr/local/bin
+sudo mv chromedriver $CHROMEDRIVER_DIR/
+
+# Install Selenium for Python
+pip3 install selenium
+
+# Generate SSH key
+ssh-keygen -t rsa -b 4096
+
+# Provide instructions to send the public key to the remote server
+echo "SSH key has been generated."
+cat ~/.ssh/id_rsa.pub
+echo "Send this key to your remote server to enable SSH access."
+
+# Verify installations
+google-chrome --version
+chromedriver --version
+
+# Clean up
+rm $CHROME_ZIP
+rm $CHROMEDRIVER_ZIP
+
+echo "Chrome, ChromeDriver, Python 3, and Selenium installation completed successfully."
+
