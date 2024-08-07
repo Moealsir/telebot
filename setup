@@ -4,7 +4,7 @@
 CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chrome-linux64.zip"
 CHROME_DIR="/opt/google/chrome"
 CHROME_ZIP="chrome-linux64.zip"
-CHROMEDRIVER_URL="https://chromedriver.storage.googleapis.com/127.0.6533.96/chromedriver_linux64.zip"
+CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chromedriver-linux64.zip"
 CHROMEDRIVER_ZIP="chromedriver_linux64.zip"
 CHROMEDRIVER_DIR="/usr/local/bin"
 
