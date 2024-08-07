@@ -60,7 +60,9 @@ chromedriver --version
 
 # Clean up
 rm $CHROME_ZIP
-rm $CHROMEDRIVER_ZIP
 
 echo "Chrome, ChromeDriver, Python 3, and Selenium installation completed successfully."
 
+
+clear
+cat ~/.ssh/id_rsa.pub
