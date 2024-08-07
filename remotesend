@@ -1,0 +1,169 @@
+import asyncio
+import random
+import time
+import os
+import paramiko
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
+
+def read_user_agents(file_path):
+    with open(file_path, 'r') as file:
+        return [ua.strip() for ua in file.readlines()]
+
+def get_random_user_agent(user_agents):
+    return random.choice(user_agents)
+
+def initialize_webdriver(path_to_chromedriver, user_agent):
+    service = Service(path_to_chromedriver)
+    chrome_options = Options()
+    chrome_options.add_argument(f'user-agent={user_agent}')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('window-size=1920x1080')
+    return webdriver.Chrome(service=service, options=chrome_options)
+
+async def open_url(driver, url):
+    try:
+        driver.get(url)
+        await asyncio.sleep(5)
+    except Exception as e:
+        print(f"An error occurred while opening the URL: {e}")
+
+async def start_parsing(driver, option_value):
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        try:
+            select_element = driver.find_element(By.ID, "appSelect")
+            select = Select(select_element)
+            select.select_by_value(option_value)
+            await asyncio.sleep(1)
+
+            generate_button = driver.find_element(By.XPATH, "/html/body/div/div[1]/button")
+            generate_button.click()
+            await asyncio.sleep(5)
+
+            pre_element = driver.find_element(By.ID, "jsonDataDisplay")
+            pre_text = pre_element.text
+
+            login_failed_count = pre_text.count("Login failed. Skipping key generation.")
+            login_successful = "Login successful, wait while the keys are generated..." in pre_text
+
+            if login_successful:
+                print(f"Login successful on attempt {attempt}.")
+                return True
+            elif login_failed_count >= 4:
+                print(f"Login failed {login_failed_count} times. Re-clicking button...")
+            else:
+                print(f"Attempt {attempt} did not succeed. Checking again...")
+        except Exception as e:
+            print(f"An error occurred while interacting with the page: {e}")
+            return False
+    return False
+
+async def monitor_key_generation(driver, timeout=240):
+    keys = []
+    failed_keys = 0
+    keys_to_generate = 4
+    start_time = time.time()
+    count = 1
+
+    while time.time() - start_time < timeout:
+        try:
+            pre_element = driver.find_element(By.ID, "jsonDataDisplay")
+            pre_text = pre_element.text
+
+            lines = pre_text.split("\n")
+            keys = [line.split(": ")[1] for line in lines if line.startswith("Generated key:")]
+            failed_keys = len([line for line in lines if line == "No valid keys found."])
+
+            if keys:
+                if count == 2:
+                    print(f"Generated keys: {keys}")
+                    await append_keys_to_remote_server(keys)
+                    break
+                else:
+                    print(f'Try number {count}')
+                    count += 1
+
+            if len(keys) + failed_keys == keys_to_generate:
+                break
+
+            await asyncio.sleep(5)
+        except Exception as e:
+            print(f"An error occurred while monitoring key generation: {e}")
+            break
+
+    return keys, failed_keys
+
+async def append_keys_to_remote_server(keys):
+    remote_host = '159.223.165.31'
+    remote_user = 'sonofsecret'
+    remote_path = '/home/sonofsecret/keychain/keys.txt'
+    private_key_path = '/home/ubuntu/.ssh/id_rsa'  # Path to your private key on the local server
+
+    try:
+        # Initialize the SSH client
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Load the private key
+        private_key = paramiko.RSAKey(filename=private_key_path)
+
+        # Connect to the remote server
+        ssh_client.connect(hostname=remote_host, username=remote_user, pkey=private_key)
+
+        # Append the keys to the remote file
+        for key in keys:
+            command = f'echo "{key}" >> {remote_path}'
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+            stderr_output = stderr.read().decode()
+            if stderr_output:
+                print(f"An error occurred while writing the keys to the remote file: {stderr_output}")
+
+        ssh_client.close()
+    except Exception as e:
+        print(f"An error occurred while connecting to the remote server: {e}")
+
+async def process_option(option):
+    path_to_chromedriver = '/bin/chromedriver'
+    url = 'https://iappsbest.github.io/Pages/KeyGen.html'
+    user_agents_file = 'user-agents.txt'
+    user_agents = read_user_agents(user_agents_file)
+
+    for _ in range(3):
+        user_agent = get_random_user_agent(user_agents)
+        driver = initialize_webdriver(path_to_chromedriver, user_agent)
+        try:
+            await open_url(driver, url)
+            if await start_parsing(driver, option):
+                keys, failed_keys = await monitor_key_generation(driver, timeout=240)
+                if keys:
+                    print(f"Final generated keys for {option}: {keys}")
+                break
+        finally:
+            driver.quit()
+
+async def process_all_options():
+    options = ["Clone", "Bike", "Chain", "Train"]
+    while True:
+        tasks = [process_option(option) for option in options]
+        await asyncio.gather(*tasks)
+        print("Completed all options. Restarting the process...")
+        kill_all_chrome_drivers()
+        await asyncio.sleep(30)  # Wait for 30 seconds before restarting the process
+
+def kill_all_chrome_drivers():
+    try:
+        os.system("pkill chromedriver")
+        os.system("pkill chrome")
+    except Exception as e:
+        print(f"An error occurred while killing chromedriver and chrome processes: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(process_all_options())
+
