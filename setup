@@ -23,8 +23,14 @@ sudo mkdir -p $CHROME_DIR
 # Unzip the downloaded file
 unzip $CHROME_ZIP -d $CHROME_DIR
 
+# Remove the existing directory if it exists
+sudo rm -rf $CHROME_DIR/chrome
+
 # Move the unzipped directory to /opt/google/chrome
 sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome
+
+# Remove the existing symlink if it exists
+sudo rm -f /usr/bin/google-chrome
 
 # Create a symlink to the Chrome executable
 sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
