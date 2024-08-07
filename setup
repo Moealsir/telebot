@@ -5,8 +5,7 @@ CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.
 CHROME_DIR="/opt/google/chrome"
 CHROME_ZIP="chrome-linux64.zip"
 CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chromedriver-linux64.zip"
-CHROMEDRIVER_ZIP="chromedriver_linux64.zip"
-CHROMEDRIVER_DIR="/bin"
+
 
 # Update package list
 sudo apt-get update
@@ -36,13 +35,13 @@ sudo rm -f /usr/bin/google-chrome
 sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
 
 # Download ChromeDriver ZIP file
-wget $CHROMEDRIVER_URL -O $CHROMEDRIVER_ZIP
+wget $CHROMEDRIVER_URL
 
-# Unzip the downloaded ChromeDriver file
-unzip $CHROMEDRIVER_ZIP
+unzip chromedriver-linux64.zip
 
-# Move ChromeDriver to /usr/local/bin
-sudo mv chromedriver_linux64/chromedriver $CHROMEDRIVER_DIR/
+sudo cp chromedriver-linux64/chromedriver /bin/
+
+rm -rf chromedriver-linux64 chromedriver-linux64.zip
 
 # Install Selenium for Python
 pip3 install selenium
