@@ -4,12 +4,11 @@ CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.
 CHROME_DIR="/opt/google/chrome"
 CHROME_ZIP="chrome-linux64.zip"
 CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chromedriver-linux64.zip"
+CHROMEDRIVER_ZIP="chromedriver-linux64.zip"
 
-# Update package list
+# Update package list and install dependencies
 sudo apt-get update
-
-sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1 unzip wget
-sudo apt-get install -y libgbm1
+sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libnss3  libgbm1 unzip wget
 
 # Download Chrome ZIP file
 wget $CHROME_URL -O $CHROME_ZIP
@@ -26,52 +25,65 @@ sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome
 # Create a symlink to the Chrome executable
 sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
 
-# Verify the installation
-google-chrome --version
+# Verify the Chrome installation
+if google-chrome --version; then
+    echo "Google Chrome installed successfully."
+else
+    echo "Google Chrome installation failed, continuing..."
+fi
 
-# Clean up
+# Clean up Chrome ZIP file
 rm $CHROME_ZIP
 
 # Download ChromeDriver ZIP file
-wget $CHROMEDRIVER_URL
+wget $CHROMEDRIVER_URL -O $CHROMEDRIVER_ZIP
 
-unzip chromedriver-linux64.zip
+# Unzip ChromeDriver
+unzip $CHROMEDRIVER_ZIP
 
-sudo cp chromedriver-linux64/chromedriver /bin/
+# Move ChromeDriver to /bin
+sudo mv chromedriver-linux64/chromedriver /bin/
 
-rm -rf chromedriver-linux64 chromedriver-linux64.zip
+# Verify the ChromeDriver installation
+if chromedriver --version; then
+    echo "ChromeDriver installed successfully."
+else
+    echo "ChromeDriver installation failed, continuing..."
+fi
+
+# Clean up ChromeDriver ZIP file and directory
+rm -rf chromedriver-linux64 $CHROMEDRIVER_ZIP
 
 # Install Selenium for Python
-pip3 install selenium
+pip3 install selenium || echo "Selenium installation failed, continuing..."
 
-# Generate SSH key
-ssh-keygen -t rsa -b 4096
+# Generate SSH key if it doesn't already exist
+if [ ! -f ~/.ssh/id_rsa ]; then
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+else
+    echo "SSH key already exists."
+fi
+
+# Display the public key
+cat ~/.ssh/id_rsa.pub
 
 # Prompt for comment
 read -p "Enter comment: " comment
 
 # Append SSH public key to remote server's authorized_keys
+echo "Appending public key to remote server's authorized_keys..."
 ssh USER@REMOTE_SERVER "echo -e '\n\n# ${comment}\n$(cat ~/.ssh/id_rsa.pub)\n' >> ~/.ssh/authorized_keys"
+if [ $? -eq 0 ]; then
+    echo "Public key successfully added to remote server."
+else
+    echo "Failed to add public key to remote server, continuing..."
+fi
 
-# Provide instructions to send the public key to the remote server
-echo "SSH key has been generated."
-cat ~/.ssh/id_rsa.pub
-echo "The SSH key has been sent to the remote server's authorized_keys."
-
-# Verify installations
-google-chrome --version
-chromedriver --version
-
-# Clean up
-rm $CHROME_ZIP
-
-echo "Chrome, ChromeDriver, Python 3, and Selenium installation completed successfully."
-cd ~
-git clone https://github.com/Moealsir/telebot.git
-cd telebot
-
+# Start screen sessions for scrap.py and remotescren
 screen -dmS scrap bash -c 'python3 scrap.py; exec bash'
 screen -dmS remote bash -c './remotescren; exec bash'
 
-clear
-cat ~/.ssh/id_rsa.pub
+# Clear the terminal
+# clear
+
+echo "Installation and setup completed."
