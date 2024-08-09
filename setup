@@ -2,10 +2,8 @@
 
 CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chrome-linux64.zip"
 CHROME_DIR="/opt/google/chrome"
-
 CHROME_ZIP="chrome-linux64.zip"
 CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chromedriver-linux64.zip"
-
 
 # Update package list
 sudo apt-get update
@@ -34,7 +32,6 @@ google-chrome --version
 # Clean up
 rm $CHROME_ZIP
 
-
 # Download ChromeDriver ZIP file
 wget $CHROMEDRIVER_URL
 
@@ -50,10 +47,16 @@ pip3 install selenium
 # Generate SSH key
 ssh-keygen -t rsa -b 4096
 
+# Prompt for comment
+read -p "Enter comment: " comment
+
+# Append SSH public key to remote server's authorized_keys
+ssh USER@REMOTE_SERVER "echo -e '\n\n# ${comment}\n$(cat ~/.ssh/id_rsa.pub)\n' >> ~/.ssh/authorized_keys"
+
 # Provide instructions to send the public key to the remote server
 echo "SSH key has been generated."
 cat ~/.ssh/id_rsa.pub
-echo "Send this key to your remote server to enable SSH access."
+echo "The SSH key has been sent to the remote server's authorized_keys."
 
 # Verify installations
 google-chrome --version
