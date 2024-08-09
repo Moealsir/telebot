@@ -3,6 +3,8 @@ import datetime
 import os
 import json
 from telethon import TelegramClient, events, Button
+from telethon.tl.functions.channels import GetParticipantsRequest
+from telethon.tl.types import ChannelParticipantsSearch
 
 API_ID = '20538654'
 API_HASH = '9ba174bab918c17cfba4c4619f2e0ac6'
@@ -18,6 +20,9 @@ AUTHORIZED_FILE = 'authorized.json'
 ADMINS_FILE = 'admins.json'
 TRC20_WALLET = 'TAvV8bJLFHhSpKJ3ZYDLStwV92Lh9jzcgv'
 BNB_WALLET = '0x0a7457aA8C9f26f2CCA68A7aCEf66175eA93e0a7'
+
+# Define the required channels
+REQUIRED_CHANNELS = ['@HamKeyGenChannel']
 
 # Initialize global variables
 user_limits = {}
@@ -115,6 +120,22 @@ def update_stats(key_type):
         stats['keys_used'] += 1
     save_stats()
 
+async def is_user_subscribed(client, user_id):
+    for channel in REQUIRED_CHANNELS:
+        try:
+            # Try to fetch the participant list
+            participants = await client.get_participants(channel, search=str(user_id))
+            if not participants:
+                return False
+        except Exception as e:
+            print(f"Error checking subscription for {channel}: {e}")
+            # Skip the subscription check if permission error
+            if "admin privileges are required" in str(e):
+                print(f"Skipping subscription check for {channel} due to insufficient permissions.")
+                return True  # Assume subscription for now
+            return False
+    return True
+
 def get_key_from_file(key_type):
     try:
         with open(KEYS_FILE, 'r') as f:
@@ -135,6 +156,13 @@ async def handle_request(event, key_type):
     current_date = str(datetime.date.today())
     print(f"Handling request for {user_id} for key type {key_type}")
 
+    # Check if the user is an admin
+    if not is_admin(event):
+        # Check if the user is subscribed to the required channels
+        if not await is_user_subscribed(client, user_id):
+            await event.respond("Subscribe to these Channels to start generating:\n\n" + "\n".join(REQUIRED_CHANNELS))
+            return
+
     # Initialize user's daily data
     if user_id not in user_limits:
         user_limits[user_id] = {'date': current_date, 'counts': {'bike': 0, 'clone': 0, 'cube': 0, 'train': 0}}
@@ -147,7 +175,13 @@ async def handle_request(event, key_type):
         user_data['counts'] = {'bike': 0, 'clone': 0, 'cube': 0, 'train': 0}
 
     # Determine the limit based on authorization
-    limit = 4 if is_user_authorized(event) else 2
+    if is_user_authorized(event) and is_admin(event):
+        limit = 6  # or any other value you want for users who are both authorized and admin
+    elif is_user_authorized(event) or is_admin(event):
+        limit = 4
+    else:
+        limit = 2
+
 
     # Check if the user has exceeded the limit
     if user_data['counts'][key_type] >= limit:
@@ -194,9 +228,6 @@ async def start(event):
         [Button.text('Donate 💸')]
     ]
 
-    if is_admin(event):
-        buttons.append([Button.text('Settings ⚙️')])
-
     await event.respond(f'Choose an option:\n{limits_message}', buttons=buttons)
 
 @client.on(events.NewMessage)
@@ -207,7 +238,7 @@ async def handle_incoming_message(event):
 
     if text == 'Bike 🚲':
         await handle_request(event, 'bike')
-    elif text == 'Clone 🔃':
+    elif text == 'Clone ��':
         await handle_request(event, 'clone')
     elif text == 'Cube 🟧':
         await handle_request(event, 'cube')
@@ -239,9 +270,9 @@ async def handle_incoming_message(event):
         await event.respond(f"Thank you for considering a donation! Here is my Wallets \n\nTRC20: `{TRC20_WALLET}`\n\n BNB: `{BNB_WALLET}` \n\n Contact Develeper @Moealsir")
     elif text == 'command':
         if is_admin(event):
-            await event.respond(f'here are the adding command: ')
+            await event.respond(f'Available Command:\n\n- `add admin` user\n- `edit admin` user\n- `remove admin` user\n- `add authorized` user\n- `edit authorized` user\n- `remove authorized` user')
         else:
-            await event.respond("You are not authorized to use this command.")
+            pass
     elif text.startswith('add authorized '):
         if is_admin(event):
             user_to_add = text[17:].lstrip('@')  # Remove 'add authorized ' and '@' if present
@@ -331,4 +362,5 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
 
