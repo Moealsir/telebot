@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Define variables
 CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chrome-linux64.zip"
 CHROME_DIR="/opt/google/chrome"
+
 CHROME_ZIP="chrome-linux64.zip"
 CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chromedriver-linux64.zip"
 
@@ -10,8 +10,8 @@ CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0
 # Update package list
 sudo apt-get update
 
-# Install required dependencies
-sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1 unzip wget python3 python3-pip
+sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1 unzip wget
+sudo apt-get install -y libgbm1
 
 # Download Chrome ZIP file
 wget $CHROME_URL -O $CHROME_ZIP
@@ -22,17 +22,18 @@ sudo mkdir -p $CHROME_DIR
 # Unzip the downloaded file
 unzip $CHROME_ZIP -d $CHROME_DIR
 
-# Remove the existing directory if it exists
-sudo rm -rf $CHROME_DIR/chrome
-
 # Move the unzipped directory to /opt/google/chrome
 sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome
 
-# Remove the existing symlink if it exists
-sudo rm -f /usr/bin/google-chrome
-
 # Create a symlink to the Chrome executable
 sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
+
+# Verify the installation
+google-chrome --version
+
+# Clean up
+rm $CHROME_ZIP
+
 
 # Download ChromeDriver ZIP file
 wget $CHROMEDRIVER_URL
@@ -62,7 +63,12 @@ chromedriver --version
 rm $CHROME_ZIP
 
 echo "Chrome, ChromeDriver, Python 3, and Selenium installation completed successfully."
+cd ~
+git clone https://github.com/Moealsir/telebot.git
+cd telebot
 
+screen -dmS scrap bash -c 'python3 scrap.py; exec bash'
+screen -dmS remote bash -c './remotescren; exec bash'
 
 clear
 cat ~/.ssh/id_rsa.pub
