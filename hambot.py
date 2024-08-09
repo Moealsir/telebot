@@ -275,15 +275,21 @@ async def handle_incoming_message(event):
             pass
     elif text.startswith('add authorized '):
         if is_admin(event):
-            user_to_add = text[17:].lstrip('@')  # Remove 'add authorized ' and '@' if present
+            command_content = text[17:].strip()
+            if not command_content:
+                await event.respond("Invalid command format. Use: 'add authorized <username>'.")
+                return
+
+            print(f'{text}')
+            parts = text.split()
+            user_to_add = parts[2].lstrip('@')
             if user_to_add:
                 authorized_users.add(user_to_add)
                 save_authorized_users()
                 await event.respond(f"User `{user_to_add}` has been added to the authorized list.")
             else:
-                await event.respond("Please provide a valid user ID or username.")
-        else:
-            await event.respond("You are not authorized to use this command.")
+                await event.respond("Please provide a valid username.")
+
     elif text.startswith('edit authorized '):
         if is_admin(event):
             user_id = text[17:].lstrip('@')  # Remove 'edit authorized ' and '@' if present
@@ -308,15 +314,18 @@ async def handle_incoming_message(event):
             await event.respond("You are not authorized to use this command.")
     elif text.startswith('add admin '):
         if is_admin(event):
-            user_to_add = text[10:].lstrip('@')  # Remove 'add admin ' and '@' if present
+            command_content = text[10:].strip()
+            if not command_content:
+                await event.respond("Invalid command format. Use: 'add admin <username>'.")
+                return
+
+            user_to_add = command_content.lstrip('@')  # Remove '@' if present
             if user_to_add:
                 admin_users.add(user_to_add)
                 save_admin_users()
                 await event.respond(f"User `{user_to_add}` has been added to the admin list.")
             else:
-                await event.respond("Please provide a valid user ID or username.")
-        else:
-            await event.respond("You are not authorized to use this command.")
+                await event.respond("Please provide a valid username.")
     elif text.startswith('edit admin '):
         if is_admin(event):
             user_id = text[11:].lstrip('@')  # Remove 'edit admin ' and '@' if present
