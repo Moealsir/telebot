@@ -7,23 +7,31 @@ CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0
 CHROMEDRIVER_ZIP="chromedriver-linux64.zip"
 
 # Update package list and install dependencies
-sudo apt-get update
-sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libnss3  libgbm1 unzip wget
+sudo apt-get update || true
+sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libnss3 libgbm1 unzip wget || true
+
+# Check for pip3 and install if not found
+if ! command -v pip3 &> /dev/null; then
+    echo "pip3 not found. Installing pip3..."
+    sudo apt-get install -y python3-pip || true
+else
+    echo "pip3 is already installed."
+fi
 
 # Download Chrome ZIP file
-wget $CHROME_URL -O $CHROME_ZIP
+wget $CHROME_URL -O $CHROME_ZIP &
 
 # Create the installation directory
-sudo mkdir -p $CHROME_DIR
+sudo mkdir -p $CHROME_DIR || true
 
 # Unzip the downloaded file
-unzip $CHROME_ZIP -d $CHROME_DIR
+unzip $CHROME_ZIP -d $CHROME_DIR || true
 
 # Move the unzipped directory to /opt/google/chrome
-sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome
+sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome || true
 
 # Create a symlink to the Chrome executable
-sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
+sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome || true
 
 # Verify the Chrome installation
 if google-chrome --version; then
@@ -33,16 +41,16 @@ else
 fi
 
 # Clean up Chrome ZIP file
-rm $CHROME_ZIP
+rm $CHROME_ZIP || true
 
 # Download ChromeDriver ZIP file
-wget $CHROMEDRIVER_URL -O $CHROMEDRIVER_ZIP
+wget $CHROMEDRIVER_URL -O $CHROMEDRIVER_ZIP &
 
 # Unzip ChromeDriver
-unzip $CHROMEDRIVER_ZIP
+unzip $CHROMEDRIVER_ZIP || true
 
 # Move ChromeDriver to /bin
-sudo mv chromedriver-linux64/chromedriver /bin/
+sudo mv chromedriver-linux64/chromedriver /bin/ || true
 
 # Verify the ChromeDriver installation
 if chromedriver --version; then
@@ -52,16 +60,14 @@ else
 fi
 
 # Clean up ChromeDriver ZIP file and directory
-rm -rf chromedriver-linux64 $CHROMEDRIVER_ZIP
-
+rm -rf chromedriver-linux64 $CHROMEDRIVER_ZIP || true
 
 # Install Selenium for Python
-sudo apt install python3-pip
 pip3 install selenium || echo "Selenium installation failed, continuing..."
 
 # Generate SSH key if it doesn't already exist
 if [ ! -f ~/.ssh/id_rsa ]; then
-    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa || true
 else
     echo "SSH key already exists."
 fi
@@ -74,16 +80,11 @@ read -p "Enter comment: " comment
 
 # Append SSH public key to remote server's authorized_keys
 echo "Appending public key to remote server's authorized_keys..."
-ssh USER@REMOTE_SERVER "echo -e '\n\n# ${comment}\n$(cat ~/.ssh/id_rsa.pub)\n' >> ~/.ssh/authorized_keys"
-if [ $? -eq 0 ]; then
-    echo "Public key successfully added to remote server."
-else
-    echo "Failed to add public key to remote server, continuing..."
-fi
+ssh USER@REMOTE_SERVER "echo -e '\n\n# ${comment}\n$(cat ~/.ssh/id_rsa.pub)\n' >> ~/.ssh/authorized_keys" || echo "Failed to add public key to remote server, continuing..."
 
 # Start screen sessions for scrap.py and remotescren
-screen -dmS scrap bash -c 'python3 scrap.py; exec bash'
-screen -dmS remote bash -c './remotescren; exec bash'
+screen -dmS scrap bash -c 'python3 scrap.py; exec bash' || echo "Failed to start screen session for scrap.py"
+screen -dmS remote bash -c './remotescren; exec bash' || echo "Failed to start screen session for remotescren"
 
 # Clear the terminal
 # clear
