@@ -54,7 +54,9 @@ fi
 # Clean up ChromeDriver ZIP file and directory
 rm -rf chromedriver-linux64 $CHROMEDRIVER_ZIP
 
+
 # Install Selenium for Python
+sudo apt install python3-pip
 pip3 install selenium || echo "Selenium installation failed, continuing..."
 
 # Generate SSH key if it doesn't already exist
