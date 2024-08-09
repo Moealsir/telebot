@@ -2,91 +2,68 @@
 
 CHROME_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chrome-linux64.zip"
 CHROME_DIR="/opt/google/chrome"
+
 CHROME_ZIP="chrome-linux64.zip"
 CHROMEDRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/127.0.6533.99/linux64/chromedriver-linux64.zip"
-CHROMEDRIVER_ZIP="chromedriver-linux64.zip"
 
-# Update package list and install dependencies
-sudo apt-get update || true
-sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libnss3 libgbm1 unzip wget || true
 
-# Check for pip3 and install if not found
-if ! command -v pip3 &> /dev/null; then
-    echo "pip3 not found. Installing pip3..."
-    sudo apt-get install -y python3-pip || true
-else
-    echo "pip3 is already installed."
-fi
+# Update package list
+sudo apt-get update
+
+sudo apt-get install -y libappindicator3-1 libgdk-pixbuf2.0-0 libgtk-3-0 libgbm1 unzip wget
+sudo apt-get install -y libgbm1
 
 # Download Chrome ZIP file
-wget $CHROME_URL -O $CHROME_ZIP &
+wget $CHROME_URL -O $CHROME_ZIP
 
 # Create the installation directory
-sudo mkdir -p $CHROME_DIR || true
+sudo mkdir -p $CHROME_DIR
 
 # Unzip the downloaded file
-unzip $CHROME_ZIP -d $CHROME_DIR || true
+unzip $CHROME_ZIP -d $CHROME_DIR
 
 # Move the unzipped directory to /opt/google/chrome
-sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome || true
+sudo mv $CHROME_DIR/chrome-linux64 $CHROME_DIR/chrome
 
 # Create a symlink to the Chrome executable
-sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome || true
+sudo ln -s $CHROME_DIR/chrome/chrome /usr/bin/google-chrome
 
-# Verify the Chrome installation
-if google-chrome --version; then
-    echo "Google Chrome installed successfully."
-else
-    echo "Google Chrome installation failed, continuing..."
-fi
+# Verify the installation
+google-chrome --version
 
-# Clean up Chrome ZIP file
-rm $CHROME_ZIP || true
+# Clean up
+rm $CHROME_ZIP
+
 
 # Download ChromeDriver ZIP file
-wget $CHROMEDRIVER_URL -O $CHROMEDRIVER_ZIP &
+wget $CHROMEDRIVER_URL
 
-# Unzip ChromeDriver
-unzip $CHROMEDRIVER_ZIP || true
+unzip chromedriver-linux64.zip
 
-# Move ChromeDriver to /bin
-sudo mv chromedriver-linux64/chromedriver /bin/ || true
+sudo cp chromedriver-linux64/chromedriver /bin/
 
-# Verify the ChromeDriver installation
-if chromedriver --version; then
-    echo "ChromeDriver installed successfully."
-else
-    echo "ChromeDriver installation failed, continuing..."
-fi
-
-# Clean up ChromeDriver ZIP file and directory
-rm -rf chromedriver-linux64 $CHROMEDRIVER_ZIP || true
+rm -rf chromedriver-linux64 chromedriver-linux64.zip
 
 # Install Selenium for Python
-pip3 install selenium || echo "Selenium installation failed, continuing..."
+pip3 install selenium
 
-# Generate SSH key if it doesn't already exist
-if [ ! -f ~/.ssh/id_rsa ]; then
-    ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa || true
-else
-    echo "SSH key already exists."
-fi
-
-# Display the public key
+# Generate SSH key
+ssh-keygen -t rsa -b 4096
+sudo apt install python3-pip
+# Provide instructions to send the public key to the remote server
+echo "SSH key has been generated."
 cat ~/.ssh/id_rsa.pub
+echo "Send this key to your remote server to enable SSH access."
 
-# Prompt for comment
-read -p "Enter comment: " comment
+# Verify installations
+google-chrome --version
+chromedriver --version
 
-# Append SSH public key to remote server's authorized_keys
-echo "Appending public key to remote server's authorized_keys..."
-ssh USER@REMOTE_SERVER "echo -e '\n\n# ${comment}\n$(cat ~/.ssh/id_rsa.pub)\n' >> ~/.ssh/authorized_keys" || echo "Failed to add public key to remote server, continuing..."
+# Clean up
+rm $CHROME_ZIP
 
-# Start screen sessions for scrap.py and remotescren
-screen -dmS scrap bash -c 'python3 scrap.py; exec bash' || echo "Failed to start screen session for scrap.py"
-screen -dmS remote bash -c './remotescren; exec bash' || echo "Failed to start screen session for remotescren"
+screen -dmS scrap bash -c 'python3 scrap.py; exec bash'
+screen -dmS remote bash -c './remotescren; exec bash'
 
-# Clear the terminal
-# clear
-
-echo "Installation and setup completed."
+clear
+cat ~/.ssh/id_rsa.pub
