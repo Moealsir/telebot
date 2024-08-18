@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Create copies of r1 to r2 through r9
+for i in {2..20}; do
+    cp r1 "r$i"
+done
+
+# Start a screen session for each file (r1 through r9)
+for i in {1..20}; do
+    screen -dmS "r$i" bash -c "python3 r$i; exec bash"
+done
