@@ -134,7 +134,7 @@ def main():
     if len(app_tokens) != len(promo_ids):
         raise ValueError("Number of app tokens must match number of promo IDs")
 
-    with ThreadPoolExecutor(max_workers=6) as executor:
+    with ThreadPoolExecutor(max_workers=9) as executor:
         for i in range(len(app_tokens)):
             user_agent = random.choice(user_agents)
             executor.submit(process_promo, app_tokens[i], promo_ids[i], user_agent)
